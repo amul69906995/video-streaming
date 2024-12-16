@@ -1,37 +1,15 @@
 import React, { useRef, useState, useEffect } from 'react';
 
-const videos = [
-  {
-    title: "Video 1",
-    source: "https://www.w3schools.com/html/mov_bbb.mp4",
-    image: "https://via.placeholder.com/248x248.png?text=Video+1",
-  },
-  {
-    title: "Video 2",
-    source: "https://www.w3schools.com/html/movie.mp4",
-    image: "https://via.placeholder.com/248x248.png?text=Video+2",
-  },
-  // Add more videos as needed
-];
-
-const VideoPlayer = () => {
+const VideoPlayer = ({ title, originalUrl, thumbnail }) => {
   const videoElement = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [trackProgress, setTrackProgress] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [currentPlayer, setCurrentPlayer] = useState(0);
   const [isMute, setIsMute] = useState(false);
   const [volumePercentage, setVolumePercentage] = useState(75);
   const [playbackRate, setPlaybackRate] = useState(1);
-
-  const handleClickBackward = () => {
-    setCurrentPlayer((prev) => (prev === 0 ? videos.length - 1 : prev - 1));
-  };
-
-  const handleClickForward = () => {
-    setCurrentPlayer((prev) => (prev === videos.length - 1 ? 0 : prev + 1));
-  };
-
+  const [showSpeedModal, setShowSpeedModal] = useState(false);
+console.log(originalUrl)
   useEffect(() => {
     if (isPlaying) {
       videoElement.current.play();
@@ -43,29 +21,17 @@ const VideoPlayer = () => {
   useEffect(() => {
     const video = videoElement.current;
 
-    const updateDuration = () => {
-      setDuration(video.duration);
-    };
-
-    const updateCurrentTime = () => {
-      setTrackProgress(video.currentTime);
-    };
+    const updateDuration = () => setDuration(video.duration);
+    const updateCurrentTime = () => setTrackProgress(video.currentTime);
 
     video.addEventListener('loadedmetadata', updateDuration);
     video.addEventListener('timeupdate', updateCurrentTime);
-
-    video.load();
-    if (isPlaying) {
-      video.play().catch((error) => {
-        console.error("Failed to play video:", error);
-      });
-    }
 
     return () => {
       video.removeEventListener('loadedmetadata', updateDuration);
       video.removeEventListener('timeupdate', updateCurrentTime);
     };
-  }, [currentPlayer, isPlaying]);
+  }, [isPlaying]);
 
   const progressBarWidth = duration ? (trackProgress / duration) * 100 : 0;
 
@@ -79,35 +45,30 @@ const VideoPlayer = () => {
     setPlaybackRate(rate);
   };
 
-  useEffect(()=>{
-    const handleKeyDown=(e)=>{
-   if(e.keyCode===39){
-    videoElement.current.currentTime += 2;
-   }
-   if(e.keyCode===37){
-    videoElement.current.currentTime -= 2;  }
-    }
-    window.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  },[])
+  const toggleSpeedModal = () => setShowSpeedModal(!showSpeedModal);
 
   return (
-    <>
-      <h1>{videos[currentPlayer].title}</h1>
-      <h4>{Math.floor(trackProgress)} / {Math.floor(duration)} seconds</h4>
-      <img src={videos[currentPlayer].image} alt={videos[currentPlayer].title} />
-      <div>
-        <button onClick={handleClickBackward}>Previous</button>
-        <button onClick={() => setIsPlaying(!isPlaying)}>{isPlaying ? "Pause" : "Play"}</button>
-        <button onClick={handleClickForward}>Next</button>
-      </div>
+    <div style={{ border: '1px solid gray', borderRadius: '10px', padding: '10px', width: '300px', position: 'relative' }}>
+      <h2>{title}</h2>
+      {/* <img src={thumbnail} alt={title} style={{ width: '100%', height: 'auto', borderRadius: '10px' }} /> */}
       
-      <video  ref={videoElement} src={videos[currentPlayer].source} width="600"></video>
-      <div>
-        <button onClick={handleClickMute}>{isMute ? "Unmute" : "Mute"}</button>
+      <video ref={videoElement} src={originalUrl} width="100%" style={{ display: 'block', marginTop: '10px', borderRadius: '10px' }} />
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
+        <button onClick={() => setIsPlaying(!isPlaying)} style={{ padding: '5px 10px', borderRadius: '5px', backgroundColor: '#007bff', color: '#fff' }}>
+          {isPlaying ? 'Pause' : 'Play'}
+        </button>
+        <span>{Math.floor(trackProgress)} / {Math.floor(duration)} s</span>
+      </div>
+
+      <div style={{ height: '5px', width: '100%', backgroundColor: '#ddd', borderRadius: '5px', marginTop: '10px' }}>
+        <div style={{ backgroundColor: 'blue', width: `${progressBarWidth}%`, height: '100%', borderRadius: '5px' }}></div>
+      </div>
+
+      <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <button onClick={handleClickMute} style={{ padding: '5px 10px', borderRadius: '5px', backgroundColor: isMute ? '#ff4d4d' : '#007bff', color: '#fff' }}>
+          {isMute ? 'Unmute' : 'Mute'}
+        </button>
         <input
           type="range"
           min="0"
@@ -118,35 +79,24 @@ const VideoPlayer = () => {
             setVolumePercentage(volume);
             videoElement.current.volume = volume / 100;
           }}
+          style={{ flex: 1, marginLeft: '10px' }}
         />
       </div>
-      <div style={{ height: '15px', width: '100%', border: '2px solid blue', borderRadius: '10px', marginTop: '10px', position: 'relative' }}>
-        <div style={{ backgroundColor: 'red', width: `${progressBarWidth}%`, height: '100%' }}></div>
+
+      <div style={{ marginTop: '10px', position: 'relative' }}>
+        <button onClick={toggleSpeedModal} style={{ padding: '5px 10px', borderRadius: '5px', backgroundColor: '#007bff', color: '#fff' }}>
+          Speed: {playbackRate}x
+        </button>
+        {showSpeedModal && (
+          <div style={{ position: 'absolute', top: '100%', left: '0', backgroundColor: '#fff', border: '1px solid gray', borderRadius: '5px', padding: '5px', zIndex: '1000' }}>
+            <button onClick={() => changePlaybackRate(1)}>1x</button>
+            <button onClick={() => changePlaybackRate(1.5)}>1.5x</button>
+            <button onClick={() => changePlaybackRate(2)}>2x</button>
+            <button onClick={() => changePlaybackRate(3)}>3x</button>
+          </div>
+        )}
       </div>
-      <input
-        type="range"
-        min="0"
-        max={duration}
-        value={trackProgress}
-        onChange={(e) => {
-          const newTime = parseFloat(e.target.value);
-          setTrackProgress(newTime);
-          videoElement.current.currentTime = newTime;
-        }}
-      />
-      <div>
-        <label>Speed: </label>
-        <button onClick={() => changePlaybackRate(1)}>1x</button>
-        <button onClick={() => changePlaybackRate(1.5)}>1.5x</button>
-        <button onClick={() => changePlaybackRate(2)}>2x</button>
-        <button onClick={() => changePlaybackRate(3)}>3x</button>
-        <span>{playbackRate}x</span>
-      </div>
-      <div>
-        <button onKeyDown={(e)=>handleKeyDown(e)}>Skip Backward 2s</button>
-        <button onKeyDown={(e)=>handleKeyDown(e)}>Skip Forward 2s</button>
-      </div>
-    </>
+    </div>
   );
 };
 

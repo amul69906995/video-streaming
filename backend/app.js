@@ -39,10 +39,10 @@ app.use(cors({
 
 
 //route
-app.get('/', (req, res) => {
-  res.json('hello from backend and cors configured')
-})
-app.use('/upload-video',videoRoutes)
+// app.get('/', (req, res) => {
+//   res.json('hello from backend and cors configured')
+// })
+app.use('/',videoRoutes)
 
 app.use('*',(req,res)=>{
   throw new Error("route not found",404)
